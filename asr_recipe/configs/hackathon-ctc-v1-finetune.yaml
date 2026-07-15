@@ -1,0 +1,56 @@
+# Hackathon finetune -- **v1 checkpoint** variant.
+#
+# WHY v1: the Kaggle zeroshot baseline (v1) scored 0.65 WER; the v2 finetune
+# scored 0.74. v2's "written_v2" tokenizer emits a different orthographic form
+# than this competition's references, so v2 loses ~0.09 before finetuning even
+# starts. v1 also matches the existing KenLM + quantization pipeline (vocab
+# 9812). So the final run finetunes from v1.
+#
+# Reuses the SAME ingested parquet as the v2 run -- the data stores raw audio +
+# native text; the tokenizer is applied at train time, so no re-ingest is needed.
+# Just point at this config + the v1 dataset card (cards/hackathon_asr_v1.yaml,
+# tokenizer_ref: omniASR_tokenizer_v1).
+
+model:
+  name: "omniASR_CTC_300M"        # v1 base (arch 300m, ships with omnilingual-asr 0.1.0)
+
+dataset:
+  name: "hackathon_asr"           # install cards/hackathon_asr_v1.yaml as this name (v1 tokenizer_ref)
+  train_split: "train"
+  valid_split: "dev"
+  storage_mode: "MIXTURE_PARQUET"
+  task_mode: "ASR"
+  mixture_parquet_storage_config:
+    dataset_summary_path: "/workspace/data/hackathon_asr/language_distribution_0.tsv"
+    beta_corpus: 0.5
+    beta_language: 0.5
+    fragment_loading:
+      cache: True
+  asr_task_config:
+    min_audio_len: 32_000
+    max_audio_len: 960_000
+    max_num_elements: 3_840_000   # finetune.sh auto-tunes this per GPU (1.92M on a 24GB card)
+    batch_shuffle_window: 1
+    normalize_audio: true
+    example_shuffle_window: 1
+
+tokenizer:
+  name: "omniASR_tokenizer_v1"    # <-- v1 tokenizer, mandatory with a v1 checkpoint (vocab 9812)
+
+optimizer:
+  config:
+    lr: 1e-05
+
+trainer:
+  freeze_encoder_for_n_steps: 0
+  mixed_precision:
+    dtype: "torch.bfloat16"
+  grad_accumulation:
+    num_batches: 8
+
+regime:
+  num_steps: 5_000
+  validate_after_n_steps: 0
+  validate_every_n_steps: 500
+  checkpoint_every_n_steps: 500
+  publish_metrics_every_n_steps: 100

@@ -1,0 +1,22 @@
+# Dataset asset card for the hackathon finetuning data.
+#
+# fairseq2 resolves `dataset.name: hackathon_asr` in the training config by
+# looking this card up. It must be installed where the asset system can find
+# it -- the simplest reliable place is the installed package's own card dir:
+#
+#   python -c "import omnilingual_asr, os; print(os.path.join(os.path.dirname(omnilingual_asr.__file__), 'cards', 'datasets'))"
+#   cp cards/hackathon_asr.yaml <that directory>/
+#
+# (finetune.sh does this as one step.)
+#
+# `data` must point at the hive-partitioned parquet root produced by
+# dataprep/ingest_hackathon_datasets.py -- the directory whose children are
+# corpus=hackathon_2026/split=train|dev|test/language=<code>/part-*.parquet.
+
+name: hackathon_asr
+dataset_family: mixture_parquet_asr_dataset
+dataset_config:
+  data: /workspace/data/hackathon_asr/version=0
+# v2 tokenizer -- MUST match the model (omniASR_CTC_300M_v2). v1 here with a v2
+# model means training targets are encoded with the wrong vocab (9812 vs 10288).
+tokenizer_ref: omniASR_tokenizer_written_v2

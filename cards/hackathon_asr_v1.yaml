@@ -1,0 +1,9 @@
+# v1 dataset card -- same data root as the v2 card, but tokenizer_ref points at
+# the v1 tokenizer (vocab 9812) so text targets are encoded to match an
+# omniASR_CTC_300M (v1) checkpoint. Install it AS name `hackathon_asr` (the
+# training config's dataset.name) into the package cards/datasets dir.
+name: hackathon_asr
+dataset_family: mixture_parquet_asr_dataset
+dataset_config:
+  data: /workspace/data/hackathon_asr/version=0
+tokenizer_ref: omniASR_tokenizer_v1

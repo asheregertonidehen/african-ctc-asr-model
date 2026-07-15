@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+*.csv
+runs/
+data/
+hf_cache/

@@ -1,0 +1,66 @@
+# Hackathon finetune -- **v2 checkpoint** variant of hackathon-ctc-finetune.yaml.
+#
+# Only two things change from the v1 config, but they MUST change together:
+#   - model.name     -> omniASR_CTC_300M_v2   (arch 300m_v2, carried by the card)
+#   - tokenizer.name -> omniASR_tokenizer_written_v2
+# v1 and v2 use different vocabularies (9812 vs 10288 tokens); a v2 checkpoint
+# with the v1 tokenizer trains on garbage targets. Never mix them.
+#
+# To load YOUR local .pt instead of downloading, install the local card
+# and set:
+#   model.name: omniASR_CTC_1B_v2_local  (or _300M_)  +  tokenizer.name: omniASR_tokenizer_written_v2_local
+#
+# For the 1B v2 on a single 24GB 4090 see the "1B override" note at the bottom.
+
+model:
+  name: "omniASR_CTC_300M_v2"
+
+dataset:
+  name: "hackathon_asr"          # asset card in cards/hackathon_asr.yaml
+  train_split: "train"
+  valid_split: "dev"
+  storage_mode: "MIXTURE_PARQUET"
+  task_mode: "ASR"
+  mixture_parquet_storage_config:
+    dataset_summary_path: "/workspace/data/hackathon_asr/language_distribution_0.tsv"
+    beta_corpus: 0.5
+    beta_language: 0.5           # temperature-balances the 6 languages (they differ a lot in hours)
+    fragment_loading:
+      cache: True
+  asr_task_config:
+    min_audio_len: 32_000        # 2s at 16kHz
+    max_audio_len: 960_000       # 60s at 16kHz
+    max_num_elements: 3_840_000  # four 60s samples per batch; halve if OOM, raise if VRAM allows
+    batch_shuffle_window: 1
+    normalize_audio: true
+    example_shuffle_window: 1
+
+tokenizer:
+  name: "omniASR_tokenizer_written_v2"   # <-- v2 tokenizer, mandatory with a v2 checkpoint
+
+optimizer:
+  config:
+    lr: 1e-05
+
+trainer:
+  freeze_encoder_for_n_steps: 0
+  mixed_precision:
+    dtype: "torch.bfloat16"      # 4090 is Ada (sm_89): native bf16, keep it
+  grad_accumulation:
+    num_batches: 8               # compensates for single-GPU effective batch vs the preset's 32 GPUs
+
+regime:
+  num_steps: 5_000
+  validate_after_n_steps: 0
+  validate_every_n_steps: 500
+  checkpoint_every_n_steps: 500
+  publish_metrics_every_n_steps: 100
+
+# ---- 1B override (omniASR_CTC_1B_v2) -----------------------------------------
+# Full-finetuning 1B on a single 24GB card is memory-marginal. If you switch
+# model.name to "omniASR_CTC_1B_v2", also apply (inline or here):
+#   dataset.asr_task_config.max_num_elements: 1_920_000   # halve the batch
+#   dataset.asr_task_config.max_audio_len:    640_000     # 40s, shorter clips
+#   trainer.grad_accumulation.num_batches:    16          # keep effective batch up
+# and enable activation checkpointing if you still OOM. If it won't fit, this is
+# exactly the case where LoRA (frozen base, adapters only) becomes the unlock.
