@@ -1,10 +1,7 @@
-# African CTC ASR Model
 
 Finetune Meta's **omnilingual-asr** CTC models (300M) on six African languages —
 **Swahili (swa), Kikuyu (kik), Dholuo (luo), Somali (som), Maasai (mas), Kalenjin (kln)** —
 and produce a competition-ready submission CSV. 
-
-The whole chain is **three commands** on a fresh GPU box:
 
 ```bash
 bash setup_pod.sh                 # environment (deps + asset cards + verify)
@@ -15,8 +12,6 @@ bash submit_from_checkpoint.sh    # checkpoint -> submission.csv
 
 Runs on a single card up to multi-GPU nodes — batch size
 and gradient accumulation are auto-tuned to the detected GPU(s).
-
-## What's in here
 
 ```
 setup_pod.sh                  fresh-box bootstrap: deps, version pins, asset cards, import verify
@@ -34,16 +29,12 @@ dataprep/
 cards/                        dataset asset cards (v1 + v2 tokenizer variants)
 ```
 
-## Requirements
-
 - CUDA GPU (24 GB+ recommended), Python 3.10–3.12 (NOT 3.13+ — fairseq2 wheels)
 - A HuggingFace token with access to the gated source datasets
   (`Anv-ke/*`, `DigitalUmuganda/Afrivoice*`) — `export HF_TOKEN=hf_...`
 - Kaggle API creds (`~/.kaggle/kaggle.json`) for the test-set download
 - ~60 GB free disk on `$WORKSPACE` (default `/workspace`): subset data ~15 GB,
   test set ~37 GB, checkpoints ~4 GB each
-
-## How the pipeline works
 
 1. **Ingest** (`dataprep/ingest_hackathon_datasets.py`) — streams a *subset*
    (`TAKE`, default 2000 train clips/language) of the five Anv-ke repos plus a
