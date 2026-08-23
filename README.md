@@ -57,4 +57,4 @@ cards/                        dataset asset cards (v1 + v2 tokenizer variants)
 ## Credits
 
 - Model, recipe skeleton, and data tooling: [facebookresearch/omnilingual-asr](https://github.com/facebookresearch/omnilingual-asr)
-- Datasets: Anv-Ke and DigitalUmuganda
+- Datasets and hackathon prompt: Anv-Ke and DigitalUmuganda
